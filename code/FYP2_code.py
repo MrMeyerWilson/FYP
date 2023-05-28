@@ -1,9 +1,11 @@
-
 # First year project 2
-import os
+from os import getcwd
+import colorthief
+import csv
+import glob
+import cv2
 import numpy as np
 from matplotlib import pyplot as plt
-from skimage.segmentation import mark_boundaries, slic, find_boundaries
 from skimage import io, morphology, transform
 from PIL import Image
 
@@ -59,52 +61,123 @@ def get_perimeter(lesion_mask):
     perimeter_pixels = np.sum(perimeter_img)
     return perimeter_img, perimeter_pixels
 
-# Functions that gets and prepares images to be worked with
-def get_image(lesion_image_path, lesion_mask_path):
-    image = Image.open(lesion_image_path)
-    image = image.convert("RGB")
-     
-    img_mask = io.imread(lesion_mask_path)
-    img_mask = img_mask > 0
-    img_mask = img_mask.astype(np.int8)
-    
-    return image, img_mask
+# Function that gets the area of a lesion
+def get_area(image_mask):
+    return np.sum(image_mask)
 
+# Function that gets the compactness of a lesion
+def get_compactness(perimeter, area):
+    return round((perimeter**2) / (4 * np.pi * area), 3)
 
+# Function that gets the symmetry of a lesion
+def get_symmetry(image_mask):
+    mask_flip = cv2.flip(image_mask, 0)
+    symmetry_image = mask_flip - image_mask
+    symmetry_image = symmetry_image != 0
+    symmetry_image = symmetry_image.astype(np.int8)
+    symmetry_pixels = np.sum(symmetry_image) / 2
+    return symmetry_image, symmetry_pixels
+
+def crop_lesion(image_path, mask_path):  
+    image = plt.imread(image_path)
+    mask = plt.imread(mask_path)
+    image = image[:,:,:3]
+
+    image[mask == 0] = 0
+    plt.imshow(image)     
+    return image
 
 def main():
-    # Get the lesion image and its mask
-    image, img_mask = get_image("images/PAT_1109_437_254.png", "images/PAT_1109_437_254_MASK.png")
-
-    # Segmentation of images by color using slic algorythm
-    segments = slic(image, mask = img_mask, n_segments = 10, start_label = 1, convert2lab = True, enforce_connectivity = False)
-    plt.imshow(segments)
-    plt.show()
-
-    # Height of lesion
-    print("Height is", get_height(img_mask))
-
-    # Width of lesion
-    print("Width is", get_width(img_mask))
-
-    # Diameter of a lesion
-    print("Diameter is", get_diameter(img_mask))
-
-    # Get perimeter of the lesion
-    perimeter_img, perimeter_pixels = get_perimeter(img_mask)
-    print("Perimeter is", perimeter_pixels)
-    plt.imshow(perimeter_img, cmap = "gray")
-    plt.show()
+    print("Running...")
     
-    # Boundaries related (might need)
-    boundaries = find_boundaries(segments, connectivity = 10)
-    plt.imshow(boundaries)
-    plt.show()
-    boundaries_mask = mark_boundaries(img_mask, boundaries, color = (1, 1, 0))
-    plt.imshow(boundaries_mask)
-    plt.show()
+    counter1 = 0
+    counter2 = 0
     
-    image.close()
+    filenames = []
+    filenames_masks = []
+    images = []
+    for filename in glob.glob('images/Cancerous_Lesions/*.png'):
+        filenames.append(filename[25:])
+        image = Image.open(filename)
+        image = image.convert("RGB")
+        images.append(image)
+        counter1 += 1
+              
+    image_masks = []
+    for filename in glob.glob('images/Cancerous_Masks/*.png'):
+        image_mask = io.imread(filename)
+        filenames_masks.append(filename[23:])
+        image_mask = image_mask > 0
+        image_mask = image_mask.astype(np.int8)
+        image_masks.append(image_mask)
+             
+    for filename in glob.glob('images/Non_Cancerous_Lesions/*.png'):
+        image = Image.open(filename)
+        filenames.append(filename[29:])
+        image = image.convert("RGB")
+        images.append(image)
+        counter2 += 1
+            
+    for filename in glob.glob('images/Non_Cancerous_Masks/*.png'):
+        image_mask = io.imread(filename)
+        filenames_masks.append(filename[27:])
+        image_mask = image_mask > 0
+        image_mask = image_mask.astype(np.int8)
+        image_masks.append(image_mask)
+         
+    counter = counter1 + counter2
+    areas = []
+    perimeter_pixels = []
+    perimeter_images = []
+    diameters = []
+    compactnesses = []
+    symmetry_images = []
+    symmetry_pixels = []
+    colors_cancerous = []
+    colors_non_cancerous = []
+    current_directory = getcwd()
+    for i in range(counter):
+        if i < counter1:
+            crop = crop_lesion(f"images/Cancerous_Lesions/{filenames[i]}", f"images/Cancerous_Masks/{filenames_masks[i]}")
+            plt.imsave(f"{current_directory}/images/Cropped_Cancerous_Lesions/{filenames[i][:-4]}_CROP.png", crop)
+            color_thief = colorthief.ColorThief(f"images/Cropped_Cancerous_Lesions/{filenames[i][:-4]}_CROP.png")
+            color_cancerous = color_thief.get_palette(color_count = 2)
+            colors_cancerous.append(color_cancerous)
+        else:
+            crop = crop_lesion(f"images/Non_Cancerous_Lesions/{filenames[i]}", f"images/Non_Cancerous_Masks/{filenames_masks[i]}")
+            plt.imsave(f"{current_directory}/images/Cropped_Non_Cancerous_Lesions/{filenames[i][:-4]}_CROP.png", crop)
+            color_thief = colorthief.ColorThief(f"images/Cropped_Non_Cancerous_Lesions/{filenames[i][:-4]}_CROP.png")
+            color_non_cancerous = color_thief.get_palette(color_count = 2)
+            colors_non_cancerous.append(color_non_cancerous)
+        
+        area = get_area(image_masks[i])
+        areas.append(area)
+        
+        diameters.append(get_diameter(image_masks[i]))
+        
+        perimeter_image, perimeter_pixel = get_perimeter(image_masks[i])
+        perimeter_pixels.append(perimeter_pixel)
+        perimeter_images.append(perimeter_image)
+        
+        compactnesses.append(get_compactness(perimeter_pixel, area))
+        
+        symmetry_image , symmetry_pixel = get_symmetry(image_masks[i])
+        symmetry_images.append(symmetry_image)
+        symmetry_pixels.append(symmetry_pixel)
+        
+    last_i = 0    
+    with open("features.csv", "w", newline = "") as file:
+        writer = csv.writer(file)
+        writer.writerow(["Symmetry", "Compactness", "R1", "G1", "B1", "R2", "G2", "B2", "R3", "G3", "B3", "Cancerous"])
+        for i in range(counter1):
+            writer.writerow([symmetry_pixels[i], compactnesses[i], colors_cancerous[i][0][0], colors_cancerous[i][0][1], colors_cancerous[i][0][2], colors_cancerous[i][1][0], colors_cancerous[i][1][1], colors_cancerous[i][1][2], colors_cancerous[i][2][0], colors_cancerous[i][2][1], colors_cancerous[i][2][2], "True"])
+            last_i = i
+        last_i += 1
+        for i in range(counter2):
+            writer.writerow([symmetry_pixels[last_i], compactnesses[last_i], colors_non_cancerous[i][0][0], colors_non_cancerous[i][0][1], colors_non_cancerous[i][0][2], colors_non_cancerous[i][1][0], colors_non_cancerous[i][1][1], colors_non_cancerous[i][1][2], colors_non_cancerous[i][2][0], colors_non_cancerous[i][2][1], colors_non_cancerous[i][2][2],"False"])
+            last_i += 1
+            
+    print("Done!")
 
 if __name__ == "__main__":
     main()
