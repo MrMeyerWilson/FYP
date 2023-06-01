@@ -14,18 +14,18 @@ def main():
     y = data[data.columns[-1]]
     X,y = X.to_numpy(), y.to_numpy()
     y = np.ravel(y)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=0.20)
-    X_train, X_val, y_train, y_val  = train_test_split(X_train, y_train, test_size=0.25)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size = 0.20)
+    X_train, X_val, y_train, y_val  = train_test_split(X_train, y_train, test_size = 0.25)
 
     classifier = KNeighborsClassifier(n_neighbors = 9)
 
     classifier.fit(X_train, y_train)
-    predictions = classifier.predict(X_test)
-    predictions_proba = classifier.predict_proba(X_test)
+    predictions = classifier.predict(X_val)
+    predictions_proba = classifier.predict_proba(y_val)
 
-    accuracy = accuracy_score(y_test, predictions) 
-    recall = recall_score(y_test, predictions) 
-    f1 = f1_score(y_test, predictions) 
+    accuracy = accuracy_score(y_val, predictions) 
+    recall = recall_score(y_val, predictions) 
+    f1 = f1_score(y_val, predictions) 
 
     print("\n")
     print(accuracy)
@@ -39,9 +39,7 @@ def main():
     display_conf.plot()
     plt.show()
     
-    print(classification_report(y_test, predictions))
-    #print(predictions_proba)
-    print(X_test[1])
+    print(classification_report(y_val, predictions))
     
     model2 = pickle.load(open("Final_Model5", "rb"))
     print(model2.score(X_test, y_test)) 
