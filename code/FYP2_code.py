@@ -1,5 +1,5 @@
 # First year project 2
-from os import getcwd
+import os
 import colorthief
 import csv
 import glob
@@ -87,9 +87,34 @@ def crop_lesion(image_path, mask_path):
     plt.imshow(image)     
     return image
 
-def main():
-    print("Running...")
+def get_features(image_path, image_mask_path):
+    image_mask = io.imread(image_mask_path)
+    image_mask = image_mask > 0
+    image_mask = image_mask.astype(np.int8)
     
+    colors_cancerous = []
+    current_directory = os.getcwd()
+    filename = os.path.basename(image_path)
+    
+    crop = crop_lesion(image_path, image_mask_path)
+    plt.imsave(f"{current_directory}/{filename[:-4]}_CROP.png", crop)
+    color_thief = colorthief.ColorThief(f"{current_directory}/{filename[:-4]}_CROP.png")
+    colors_cancerous = color_thief.get_palette(color_count = 2)
+    
+    height = get_height(image_mask)
+    width = get_width(image_mask)
+    diameter = get_diameter(image_mask)
+    
+    area = get_area(image_mask)
+    perimeter_image, perimeter_pixel = get_perimeter(image_mask)
+    compactness = get_compactness(perimeter_pixel, area)
+    
+    symmetry_image , symmetry_pixel = get_symmetry(image_mask)
+    return width, height, diameter, perimeter_pixel, area, compactness, symmetry_pixel, colors_cancerous
+    
+
+def main():
+     
     counter1 = 0
     counter2 = 0
     
@@ -127,15 +152,17 @@ def main():
          
     counter = counter1 + counter2
     areas = []
+    heights = []
+    widths = []
+    diameters = []
     perimeter_pixels = []
     perimeter_images = []
-    diameters = []
     compactnesses = []
     symmetry_images = []
     symmetry_pixels = []
     colors_cancerous = []
     colors_non_cancerous = []
-    current_directory = getcwd()
+    current_directory = os.getcwd()
     for i in range(counter):
         if i < counter1:
             crop = crop_lesion(f"images/Cancerous_Lesions/{filenames[i]}", f"images/Cancerous_Masks/{filenames_masks[i]}")
@@ -150,10 +177,12 @@ def main():
             color_non_cancerous = color_thief.get_palette(color_count = 2)
             colors_non_cancerous.append(color_non_cancerous)
         
+        heights.append(get_height(image_masks[i]))
+        widths.append(get_width(image_masks[i]))
+        diameters.append(get_diameter(image_masks[i]))
+        
         area = get_area(image_masks[i])
         areas.append(area)
-        
-        diameters.append(get_diameter(image_masks[i]))
         
         perimeter_image, perimeter_pixel = get_perimeter(image_masks[i])
         perimeter_pixels.append(perimeter_pixel)
@@ -168,16 +197,16 @@ def main():
     last_i = 0    
     with open("features.csv", "w", newline = "") as file:
         writer = csv.writer(file)
-        writer.writerow(["Symmetry", "Compactness", "R1", "G1", "B1", "R2", "G2", "B2", "R3", "G3", "B3", "Cancerous"])
+        writer.writerow(["Width", "Height", "Diameter", "Perimeter", "Area", "Symmetry", "Compactness", "R1", "G1", "B1", "R2", "G2", "B2", "R3", "G3", "B3", "Cancerous"])
         for i in range(counter1):
-            writer.writerow([symmetry_pixels[i], compactnesses[i], colors_cancerous[i][0][0], colors_cancerous[i][0][1], colors_cancerous[i][0][2], colors_cancerous[i][1][0], colors_cancerous[i][1][1], colors_cancerous[i][1][2], colors_cancerous[i][2][0], colors_cancerous[i][2][1], colors_cancerous[i][2][2], "True"])
+            writer.writerow([widths[i], heights[i], diameters[i], perimeter_pixels[i], areas[i], symmetry_pixels[i], compactnesses[i], colors_cancerous[i][0][0], colors_cancerous[i][0][1], colors_cancerous[i][0][2], colors_cancerous[i][1][0], colors_cancerous[i][1][1], colors_cancerous[i][1][2], colors_cancerous[i][2][0], colors_cancerous[i][2][1], colors_cancerous[i][2][2], "True"])
             last_i = i
         last_i += 1
         for i in range(counter2):
-            writer.writerow([symmetry_pixels[last_i], compactnesses[last_i], colors_non_cancerous[i][0][0], colors_non_cancerous[i][0][1], colors_non_cancerous[i][0][2], colors_non_cancerous[i][1][0], colors_non_cancerous[i][1][1], colors_non_cancerous[i][1][2], colors_non_cancerous[i][2][0], colors_non_cancerous[i][2][1], colors_non_cancerous[i][2][2],"False"])
+            writer.writerow([widths[last_i], heights[last_i], diameters[last_i], perimeter_pixels[last_i], areas[last_i], symmetry_pixels[last_i], compactnesses[last_i], colors_non_cancerous[i][0][0], colors_non_cancerous[i][0][1], colors_non_cancerous[i][0][2], colors_non_cancerous[i][1][0], colors_non_cancerous[i][1][1], colors_non_cancerous[i][1][2], colors_non_cancerous[i][2][0], colors_non_cancerous[i][2][1], colors_non_cancerous[i][2][2],"False"])
             last_i += 1
+    print("done")
             
-    print("Done!")
 
 if __name__ == "__main__":
     main()

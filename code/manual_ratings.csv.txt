@@ -1,0 +1,6 @@
+image,assymmetry_Gabriel,assymmetry_Markus,color_Gabriel,color_Markus
+Pat_1109_437_254,2,2,"brown","dark brown/brown"
+Pat_1613_2744_603,3,3,"light brown","light brown"
+Pat_270_417_257,4,5,"dark_brown","black/brown"
+Pat_656_1246_489,3,4,"black","black/dark brown"
+Pat_14_22_850,1,3,"dark red","brown"
