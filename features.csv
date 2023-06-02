@@ -1,4 +1,4 @@
-Width,Height,Diameter,Perimeter,Area,Symmetry,Compactness,R1,G1,B1,R2,G2,B2,R3,G3,B3,Cancerous
+Width,Height,Diameter,Perimeter,Area,Asymmetry,Compactness,R1,G1,B1,R2,G2,B2,R3,G3,B3,Cancerous
 387,461,470,4164,131195,14487.0,10.517,26,22,20,133,141,133,125,107,116,True
 61,80,93,703,4311,4311.0,9.123,4,4,4,168,102,88,124,92,84,True
 160,168,200,1678,22500,2470.0,9.958,4,4,4,189,206,202,117,143,132,True
