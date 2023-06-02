@@ -3,9 +3,9 @@ import pickle
 import Feature_Extractor as f_extract
 
 def classify(image_path, image_mask_path):
-    width, height, diameter, perimeter_pixel, area, compactness, assymetry_pixel, colors_cancerous = f_extract.get_features(image_path, image_mask_path)
+    width, height, diameter, perimeter_pixel, area, compactness, asymmetry_pixel, colors_cancerous = f_extract.get_features(image_path, image_mask_path)
     
-    features = [width, height, diameter, perimeter_pixel, area, compactness, assymetry_pixel]
+    features = [width, height, diameter, perimeter_pixel, area, compactness, asymmetry_pixel]
     features.extend(colors_cancerous[0])
     features.extend(colors_cancerous[1])
     features.extend(colors_cancerous[2])
